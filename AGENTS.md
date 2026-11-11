@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Chat streams from the server route `src/routes/api/chat.ts` (AI SDK UI message stream); it is a placeholder for the owner's own model/RAG backend, so keep the UI talking only to that endpoint.
+- The companion visual lives in `src/components/trudge/CompanionStage.tsx` so the 3D model can replace it without touching the chat.
