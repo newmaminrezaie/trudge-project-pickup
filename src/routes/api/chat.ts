@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/chat")({
       POST: async ({ request }) => {
         const apiKey = process.env["GEMINI_API_KEY"];
         if (!apiKey) return new Response("Trudge isn't configured yet.", { status: 500 });
-        const { messages } = (await request.json()) as { messages: UIMessage[] };
+        const { messages, voice } = (await request.json()) as { messages: UIMessage[]; voice?: boolean };
         const recent = messages.slice(-20);
         const lastUser = [...recent].reverse().find((m) => m.role === "user");
         const query = lastUser?.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ") ?? "";
@@ -27,8 +27,11 @@ export const Route = createFileRoute("/api/chat")({
           ? `${PERSONA}\n\nReference passages from NA literature:\n${passages.map((p, i) => `[${i + 1}] ${p.text}`).join("\n\n")}`
           : PERSONA;
 
+        const finalSystem = voice
+          ? `${system}\n\nVOICE SESSION: you are speaking aloud, like a calm counselor in the room. Reply in 1 to 3 short spoken sentences, no lists, markdown or headings. Reflect what you heard, then ask one gentle open question and leave space.`
+          : system;
         const gemini = createOpenAICompatible({ name: "gemini", baseURL: "https://generativelanguage.googleapis.com/v1beta/openai", apiKey });
-        const result = streamText({ model: gemini(MODEL), system, messages: await convertToModelMessages(recent), maxOutputTokens: 350, temperature: 0.7, maxRetries: 2 });
+        const result = streamText({ model: gemini(MODEL), system: finalSystem, messages: await convertToModelMessages(recent), maxOutputTokens: 350, temperature: 0.7, maxRetries: 2 });
         return result.toUIMessageStreamResponse({
           onError: (e) => {
             console.error("chat error", e);

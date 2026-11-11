@@ -12,7 +12,13 @@ export function CompanionStage({
   thinking = false,
   talking = false,
   compact = false,
+  mouth,
+  listenLevel,
 }: {
+  /** Live mouth level 0..1 (-1 = simulate) from real audio. */
+  mouth?: { current: number } | undefined;
+  /** Live mic level 0..1 to show Trudge is hearing. */
+  listenLevel?: { current: number } | undefined;
   thinking?: boolean;
   talking?: boolean;
   compact?: boolean;
@@ -44,16 +50,32 @@ export function CompanionStage({
     const p = playerRef.current;
     if (!p || !ready) return;
     if (!talking) { p.params.mouthOpen = 0; return; }
-    let raf = 0, t = 0, target = 0;
+    let raf = 0, t = 0, target = 0, sim = 0;
     const tick = () => {
       t++;
-      if (t % 6 === 0) { target = Math.random() < 0.2 ? 0 : 0.3 + Math.random() * 0.6; p.params.vowel = Math.random() * 2 - 1; }
+      const live = mouth?.current ?? -1;
+      if (t % 6 === 0) { sim = Math.random() < 0.2 ? 0 : 0.3 + Math.random() * 0.6; p.params.vowel = Math.random() * 2 - 1; }
+      target = live >= 0 ? live : sim;
       p.params.mouthOpen += (target - p.params.mouthOpen) * 0.35;
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => { cancelAnimationFrame(raf); p.params.mouthOpen = 0; };
-  }, [talking, ready]);
+  }, [talking, ready, mouth]);
+
+  // Soft glow that follows the user's voice while listening.
+  const glowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!listenLevel) return;
+    let raf = 0, v = 0;
+    const tick = () => {
+      v += (listenLevel.current - v) * 0.2;
+      if (glowRef.current) { glowRef.current.style.opacity = String(0.3 + v * 0.7); glowRef.current.style.transform = `scale(${1 + v * 0.25})`; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [listenLevel]);
 
   useEffect(() => {
     if (ready) playerRef.current?.setExpression(talking ? "smile" : null, 0.4);
@@ -64,7 +86,7 @@ export function CompanionStage({
       className={`relative mx-auto ${compact ? "h-36 w-28" : "h-[min(40vh,380px)] w-[min(72vw,320px)]"}`}
       aria-label="Trudge companion"
     >
-      <div className={`absolute inset-x-4 bottom-2 top-1/3 rounded-full bg-sage/30 blur-3xl ${thinking ? "animate-pulse" : ""}`} />
+      <div ref={glowRef} className={`absolute inset-x-4 transition-transform bottom-2 top-1/3 rounded-full bg-sage/30 blur-3xl ${thinking ? "animate-pulse" : ""}`} />
       <canvas
         id="avatar-canvas"
         ref={canvasRef}

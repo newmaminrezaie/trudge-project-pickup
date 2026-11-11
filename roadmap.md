@@ -7,3 +7,6 @@ Backend changes are not included in this corpus-only upload.- [x] Subtle non-aff
 - [x] Switch chat to fast Gemini with owner's Google key
 - [x] Voice input via Google AI Studio transcription (single GEMINI_API_KEY)
 - [ ] Optional: add alternative model/voice providers later
+
+- [x] Hands-free voice session (auto-send on pause, spoken greeting, interrupt, lip sync)
+- [ ] Plug AWS Nova into /api/tts (waiting on AWS credentials)

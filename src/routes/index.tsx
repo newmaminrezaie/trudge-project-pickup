@@ -3,8 +3,8 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { ArrowUp, RotateCcw, Square, Phone } from "lucide-react";
-import { MicButton } from "@/components/trudge/MicButton";
+import { ArrowUp, RotateCcw, Square, Phone, Mic, PhoneOff } from "lucide-react";
+import { useVoiceSession, GREETING, type VoicePhase } from "@/hooks/use-voice-session";
 import { CompanionStage } from "@/components/trudge/CompanionStage";
 
 export const Route = createFileRoute("/")({
@@ -33,6 +33,26 @@ function Index() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const busy = status === "submitted" || status === "streaming";
+  const voice = useVoiceSession({ onUserText: (t) => sendMessage({ text: t }, { body: { voice: true } }) });
+  const prevStatus = useRef(status);
+
+  // In a voice session, speak each finished reply aloud, then listen again.
+  useEffect(() => {
+    const was = prevStatus.current;
+    prevStatus.current = status;
+    if (!voice.active) return;
+    if ((was === "streaming" || was === "submitted") && status === "ready") {
+      const last = [...messages].reverse().find((m) => m.role === "assistant");
+      const text = last?.parts.map((p) => (p.type === "text" ? p.text : "")).join("") ?? "";
+      void voice.speak(text);
+    }
+    if (status === "error") voice.listen();
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startVoice = () => {
+    setMessages((m) => [...m, { id: `greet-${Date.now()}`, role: "assistant", parts: [{ type: "text", text: GREETING }] }]);
+    void voice.start();
+  };
 
   useEffect(() => {
     try {
@@ -85,6 +105,9 @@ function Index() {
           {empty ? (
             <div className="flex flex-col items-center pt-0 text-center sm:pt-4">
               <CompanionStage thinking={false} />
+              <button onClick={startVoice} className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground shadow-[var(--shadow-soft)] transition hover:opacity-90">
+                <Mic className="h-4 w-4" /> Talk with Trudge
+              </button>
               <h1 className="mt-2 font-display text-3xl leading-tight sm:text-4xl">Just for today,<br />you're not alone.</h1>
               <p className="mt-3 max-w-sm text-sm text-muted-foreground">I'm Trudge. Talk to me about cravings, the steps, a hard day — or anything on your mind.</p>
               <div className="mt-8 grid w-full gap-2 sm:grid-cols-2">
@@ -98,7 +121,13 @@ function Index() {
           ) : (
             <>
               <div className="sticky top-0 z-10 -mx-5 flex justify-center bg-gradient-to-b from-background via-background to-transparent pb-4">
-                <CompanionStage compact thinking={status === "submitted"} talking={status === "streaming"} />
+                <CompanionStage
+                  compact={!voice.active}
+                  thinking={status === "submitted" || voice.phase === "transcribing" || voice.phase === "thinking"}
+                  talking={voice.active ? voice.phase === "speaking" : status === "streaming"}
+                  mouth={voice.active ? voice.mouth : undefined}
+                  listenLevel={voice.active ? voice.level : undefined}
+                />
               </div>
               <div className="space-y-6">
                 {messages.map((m) => {
@@ -129,6 +158,17 @@ function Index() {
       </main>
 
       <footer className="px-4 pb-4 pt-2">
+        {voice.active ? (
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-3xl border border-border bg-card p-2 pl-5 shadow-[var(--shadow-soft)]">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+              <span className={`h-2 w-2 rounded-full bg-sage ${voice.phase === "hearing" || voice.phase === "listening" ? "animate-pulse" : ""}`} />
+              {phaseLabel(voice.phase)}
+            </span>
+            <button type="button" onClick={voice.end} aria-label="End voice session" className="inline-flex h-10 items-center gap-2 rounded-full bg-secondary px-4 text-sm text-secondary-foreground">
+              <PhoneOff className="h-4 w-4" /> End
+            </button>
+          </div>
+        ) : (
         <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="mx-auto flex max-w-2xl items-end gap-2 rounded-3xl border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <textarea
             ref={inputRef}
@@ -139,7 +179,11 @@ function Index() {
             placeholder="What's on your mind?"
             className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-[15px] outline-none placeholder:text-muted-foreground"
           />
-          {!busy && <MicButton onText={(t) => send(t)} />}
+          {!busy && (
+            <button type="button" onClick={startVoice} aria-label="Talk with Trudge" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+              <Mic className="h-4 w-4" />
+            </button>
+          )}
           {busy ? (
             <button type="button" onClick={stop} aria-label="Stop" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
               <Square className="h-4 w-4" />
@@ -150,10 +194,23 @@ function Index() {
             </button>
           )}
         </form>
+        )}
+        {voice.error && <p className="mx-auto mt-2 max-w-2xl text-center text-xs text-muted-foreground">{voice.error}</p>}
         <p id="help" className="mx-auto mt-2 max-w-2xl text-center text-[11px] text-muted-foreground">
           Trudge is an independent companion, not affiliated with NA or any organization, and not therapy or professional treatment. In crisis, call your local emergency number.
         </p>
       </footer>
     </div>
   );
+}
+
+function phaseLabel(p: VoicePhase) {
+  switch (p) {
+    case "hearing": return "I'm listening…";
+    case "listening": return "Take your time — I'm here.";
+    case "transcribing":
+    case "thinking": return "Sitting with that…";
+    case "speaking": return "Trudge is speaking — just talk to interrupt.";
+    default: return "Starting…";
+  }
 }
