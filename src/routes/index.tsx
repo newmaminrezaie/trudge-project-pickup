@@ -82,9 +82,9 @@ function Index() {
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-2xl px-5 pb-6">
           {empty ? (
-            <div className="flex flex-col items-center pt-6 text-center sm:pt-12">
+            <div className="flex flex-col items-center pt-0 text-center sm:pt-4">
               <CompanionStage thinking={false} />
-              <h1 className="mt-6 font-display text-3xl leading-tight sm:text-4xl">Just for today,<br />you're not alone.</h1>
+              <h1 className="mt-2 font-display text-3xl leading-tight sm:text-4xl">Just for today,<br />you're not alone.</h1>
               <p className="mt-3 max-w-sm text-sm text-muted-foreground">I'm Trudge. Talk to me about cravings, the steps, a hard day — or anything on your mind.</p>
               <div className="mt-8 grid w-full gap-2 sm:grid-cols-2">
                 {prompts.map((p) => (
@@ -97,7 +97,7 @@ function Index() {
           ) : (
             <>
               <div className="sticky top-0 z-10 -mx-5 flex justify-center bg-gradient-to-b from-background via-background to-transparent pb-4">
-                <div className="scale-50 -my-10"><CompanionStage thinking={busy} /></div>
+                <CompanionStage compact thinking={status === "submitted"} talking={status === "streaming"} />
               </div>
               <div className="space-y-6">
                 {messages.map((m) => {
