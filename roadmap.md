@@ -4,3 +4,5 @@
 - [x] Validate the corpus count, passage fields, and copied content.
 
 Backend changes are not included in this corpus-only upload.- [x] Subtle non-affiliation / not-treatment disclaimer
+- [x] Switch chat to fast Gemini with owner's Google key
+- [ ] Whisper voice input (waiting on Groq key)

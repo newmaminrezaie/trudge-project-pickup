@@ -4,6 +4,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ArrowUp, RotateCcw, Square, Phone } from "lucide-react";
+import { MicButton } from "@/components/trudge/MicButton";
 import { CompanionStage } from "@/components/trudge/CompanionStage";
 
 export const Route = createFileRoute("/")({
@@ -138,6 +139,7 @@ function Index() {
             placeholder="What's on your mind?"
             className="max-h-40 min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-[15px] outline-none placeholder:text-muted-foreground"
           />
+          {!busy && <MicButton onText={(t) => send(t)} />}
           {busy ? (
             <button type="button" onClick={stop} aria-label="Stop" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
               <Square className="h-4 w-4" />
