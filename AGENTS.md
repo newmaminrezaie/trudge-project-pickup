@@ -33,4 +33,5 @@ use the editor.
 - The companion visual lives in `src/components/trudge/CompanionStage.tsx` so the 3D model can replace it without touching the chat.
 - Chat uses OpenRouter (OPENROUTER_API_KEY, read inside the handler) via @ai-sdk/openai-compatible in src/routes/api/chat.ts; why: owner's chosen provider.
 - RAG is in-memory BM25 over src/lib/knowledge/chunks.json (no DB/embeddings); why: single document, runtime-neutral for Cloudflare and Vercel.
+- Keep the owner's structured recovery corpus source-controlled in `src/data/living-clean.json`; why: external hosting and repository sync need the original passages without PDF extraction.
 - Keep server code free of Node-only APIs; why: planned Vercel deploy (switch nitro preset to vercel then).
