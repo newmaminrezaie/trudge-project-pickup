@@ -55,7 +55,7 @@ export const Route = createFileRoute("/api/tts")({
         const part = data.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)?.inlineData;
         if (!part?.data) return new Response("No audio", { status: 502 });
         const rate = Number(/rate=(\d+)/.exec(part.mimeType ?? "")?.[1] ?? 24000);
-        return new Response(wav(b64ToBytes(part.data), rate), { headers: { "Content-Type": "audio/wav", "Cache-Control": "no-store" } });
+        return new Response(wav(b64ToBytes(part.data), rate).buffer as ArrayBuffer, { headers: { "Content-Type": "audio/wav", "Cache-Control": "no-store" } });
       },
     },
   },
