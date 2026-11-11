@@ -3,8 +3,9 @@ import { createFileRoute } from "@tanstack/react-router";
 // Spoken replies via Gemini TTS (same GEMINI_API_KEY). Gemini returns 24 kHz 16-bit mono PCM;
 // we wrap it in a WAV header so the browser can play it and drive lip sync.
 const MODEL = "gemini-2.5-flash-preview-tts";
-const VOICE = "Aoede"; // calm, warm voice
-const STYLE = "Say this softly, warmly and unhurried, like a caring counselor: ";
+const VOICE = "Charon"; // warm, steady male voice
+const STYLE =
+  "Read this aloud in a warm, steady male voice — like a caring counselor sitting across the room. Speak slowly and naturally, with gentle pauses, soft emphasis, and a calm, reassuring tone: ";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
