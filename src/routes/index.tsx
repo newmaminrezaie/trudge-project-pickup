@@ -149,7 +149,7 @@ function Index() {
           )}
         </form>
         <p id="help" className="mx-auto mt-2 max-w-2xl text-center text-[11px] text-muted-foreground">
-          Trudge is a companion, not a sponsor or a doctor. In crisis, call your local emergency number or a meeting hotline.
+          Trudge is an independent companion, not affiliated with NA or any organization, and not therapy or professional treatment. In crisis, call your local emergency number.
         </p>
       </footer>
     </div>
