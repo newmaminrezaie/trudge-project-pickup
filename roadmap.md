@@ -5,4 +5,5 @@
 
 Backend changes are not included in this corpus-only upload.- [x] Subtle non-affiliation / not-treatment disclaimer
 - [x] Switch chat to fast Gemini with owner's Google key
-- [ ] Whisper voice input (waiting on Groq key)
+- [x] Voice input via Google AI Studio transcription (single GEMINI_API_KEY)
+- [ ] Optional: add alternative model/voice providers later
