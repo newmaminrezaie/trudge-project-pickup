@@ -31,5 +31,5 @@ export function retrieve(query: string, k = 5): Chunk[] {
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)
     .slice(0, k)
-    .map((x) => docs[x.i]);
+    .map((x) => docs[x.i] as Chunk);
 }
