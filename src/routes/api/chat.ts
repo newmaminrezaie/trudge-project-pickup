@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/chat")({
           : PERSONA;
 
         const openrouter = createOpenAICompatible({ name: "openrouter", baseURL: "https://openrouter.ai/api/v1", apiKey });
-        const result = streamText({ model: openrouter(MODEL), system, messages: await convertToModelMessages(recent), maxRetries: 0 });
+        const result = streamText({ model: openrouter(MODEL), system, messages: await convertToModelMessages(recent), maxOutputTokens: 350, temperature: 0.7, maxRetries: 0 });
         return result.toUIMessageStreamResponse({
           onError: (e) => {
             console.error("chat error", e);
