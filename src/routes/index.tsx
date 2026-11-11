@@ -127,7 +127,7 @@ function Index() {
       </main>
 
       <footer className="px-4 pb-4 pt-2">
-        <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="mx-auto flex max-w-2xl items-end gap-2 rounded-3xl border border-border bg-card p-2 shadow-soft">
+        <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="mx-auto flex max-w-2xl items-end gap-2 rounded-3xl border border-border bg-card p-2 shadow-[var(--shadow-soft)]">
           <textarea
             ref={inputRef}
             value={input}
