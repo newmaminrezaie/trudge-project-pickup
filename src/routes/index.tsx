@@ -24,7 +24,7 @@ const KEY = "trudge-conversation";
 const prompts = ["I'm having a craving right now", "Help me with Step One", "I need a Just for Today thought", "I relapsed and feel ashamed"];
 
 function Index() {
-  const { messages, sendMessage, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, stop, setMessages, error } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
@@ -119,6 +119,7 @@ function Index() {
                     ))}
                   </div>
                 )}
+                {error && <p role="alert" className="rounded-2xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">{error.message || "Trudge couldn't reply just now. Please try again."}</p>}
                 <div ref={endRef} />
               </div>
             </>
