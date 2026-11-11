@@ -19,7 +19,7 @@ function rms(an: AnalyserNode, buf: Float32Array<ArrayBuffer>) {
 
 /**
  * Hands-free counselor loop: greet → listen → auto-send on pause → speak reply → listen again.
- * Speech out tries /api/tts (streaming TTS provider, e.g. AWS Nova) and falls back to the browser voice.
+ * Speech out comes from /api/tts (Gemini TTS); audio drives the avatar mouth.
  */
 export function useVoiceSession({ onUserText }: { onUserText: (text: string) => void }) {
   const [phase, setPhase] = useState<VoicePhase>("off");
@@ -41,7 +41,6 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
   const stopSpeaking = useCallback(() => {
     audioRef.current?.pause();
     audioRef.current = null;
-    if (typeof speechSynthesis !== "undefined") speechSynthesis.cancel();
     mouth.current = 0;
   }, []);
 
@@ -123,22 +122,9 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
     rafRef.current = requestAnimationFrame(tick);
   }, [listen, stopSpeaking]);
 
-  const speakBrowser = (text: string) =>
-    new Promise<void>((resolve) => {
-      if (typeof speechSynthesis === "undefined") return resolve();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95; u.pitch = 1;
-      const v = speechSynthesis.getVoices().find((x) => /en/i.test(x.lang) && /natural|samantha|google uk english female|aria|jenny/i.test(x.name));
-      if (v) u.voice = v;
-      mouth.current = -1;
-      u.onboundary = () => { mouth.current = -1; };
-      u.onend = u.onerror = () => { mouth.current = 0; resolve(); };
-      speechSynthesis.speak(u);
-    });
-
   const speakServer = async (text: string) => {
     const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-    if (!res.ok) return false;
+    if (!res.ok) { setError("Trudge's voice is busy right now — replies still show in the chat."); return false; }
     const url = URL.createObjectURL(await res.blob());
     const audio = new Audio(url);
     audioRef.current = audio;
@@ -166,7 +152,6 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
     watchBargeIn();
     let ok = false;
     try { ok = await speakServer(clean); } catch { ok = false; }
-    if (!ok && phaseRef.current === "speaking") await speakBrowser(clean);
     if (phaseRef.current === "speaking") listen();
   }, [listen, watchBargeIn]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -35,4 +35,4 @@ use the editor.
 - RAG is in-memory BM25 over src/lib/knowledge/chunks.json (no DB/embeddings); why: single document, runtime-neutral for Cloudflare and Vercel.
 - Keep the owner's structured recovery corpus source-controlled in `src/data/living-clean.json`; why: external hosting and repository sync need the original passages without PDF extraction.
 - Keep server code free of Node-only APIs; why: planned Vercel deploy (switch nitro preset to vercel then).
-- Voice is a hands-free session (src/hooks/use-voice-session.ts): silence detection auto-sends to src/routes/api/transcribe.ts (Gemini), replies are spoken via src/routes/api/tts.ts (placeholder for AWS Nova, falls back to browser voice) with audio-driven lip sync; why: owner wants a natural counselor feel, single Google key for STT.
+- Voice is a hands-free session (src/hooks/use-voice-session.ts): silence detection auto-sends to src/routes/api/transcribe.ts (Gemini), replies are spoken via src/routes/api/tts.ts (Gemini TTS, WAV-wrapped PCM; no browser voice) with audio-driven lip sync; why: owner wants a natural counselor feel, single Google key for STT.
