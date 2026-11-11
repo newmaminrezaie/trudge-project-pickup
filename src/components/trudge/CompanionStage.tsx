@@ -61,13 +61,14 @@ export function CompanionStage({
 
   return (
     <div
-      className={`relative mx-auto ${compact ? "h-36 w-28" : "h-[min(46vh,400px)] w-[min(72vw,320px)]"}`}
+      className={`relative mx-auto ${compact ? "h-36 w-28" : "h-[min(40vh,380px)] w-[min(72vw,320px)]"}`}
       aria-label="Trudge companion"
     >
       <div className={`absolute inset-x-4 bottom-2 top-1/3 rounded-full bg-sage/30 blur-3xl ${thinking ? "animate-pulse" : ""}`} />
       <canvas
         id="avatar-canvas"
         ref={canvasRef}
+        style={{ maskImage: "linear-gradient(to bottom, black 75%, transparent)" }}
         className={`relative h-full w-full transition-opacity duration-700 ${ready ? "opacity-100" : "opacity-0"}`}
       />
       {!ready && <div className="trudge-orb absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full" />}
