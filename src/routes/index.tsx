@@ -89,6 +89,14 @@ function Index() {
       <header className="flex items-center justify-between px-5 py-4">
         <span className="font-display text-2xl tracking-tight">trudge</span>
         <div className="flex items-center gap-1">
+          <div role="group" aria-label="Voice engine" className="mr-1 items-center rounded-full border border-border p-0.5 text-[10px] text-muted-foreground flex">
+            {(["gemini", "nova"] as const).map((e) => (
+              <button key={e} disabled={voice.active} onClick={() => voice.setEngine(e)} aria-pressed={voice.engine === e}
+                className={`rounded-full px-2 py-0.5 transition disabled:opacity-60 ${voice.engine === e ? "bg-secondary text-foreground" : "hover:text-foreground"}`}>
+                {e === "gemini" ? "Gemini" : "Nova Sonic β"}
+              </button>
+            ))}
+          </div>
           <a href="#help" className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:bg-secondary">
             <Phone className="h-3.5 w-3.5" /> Need help now
           </a>

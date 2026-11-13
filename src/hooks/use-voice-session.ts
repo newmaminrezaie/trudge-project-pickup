@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { startNova } from "@/lib/voice/nova-stream";
+
+export type VoiceEngine = "gemini" | "nova";
+const ENGINE_KEY = "trudge_voice_engine";
+function readEngine(): VoiceEngine {
+  const q = new URLSearchParams(location.search).get("voice");
+  if (q === "nova" || q === "gemini") { localStorage.setItem(ENGINE_KEY, q); return q; }
+  return localStorage.getItem(ENGINE_KEY) === "nova" ? "nova" : "gemini";
+}
 
 export type VoicePhase = "off" | "greeting" | "listening" | "hearing" | "transcribing" | "thinking" | "speaking";
 
@@ -35,6 +44,11 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
   const rafRef = useRef(0);
   const onTextRef = useRef(onUserText);
   onTextRef.current = onUserText;
+
+  const [engine, setEngineState] = useState<VoiceEngine>("gemini");
+  const novaStop = useRef<null | (() => void)>(null);
+  useEffect(() => { setEngineState(readEngine()); }, []);
+  const setEngine = useCallback((e: VoiceEngine) => { localStorage.setItem(ENGINE_KEY, e); setEngineState(e); }, []);
 
   const set = (p: VoicePhase) => { phaseRef.current = p; setPhase(p); };
 
@@ -164,6 +178,27 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
       an.fftSize = 1024;
       ctx.createMediaStreamSource(stream).connect(an);
       streamRef.current = stream; ctxRef.current = ctx; micAn.current = an;
+      if (engine === "nova") {
+        try {
+          set("listening");
+          novaStop.current = await startNova(stream, {
+            mouth, level,
+            onSpeaking: (on) => { if (phaseRef.current !== "off") set(on ? "speaking" : "listening"); },
+            onBargeIn: () => set("hearing"),
+            onDrop: () => {
+              novaStop.current?.(); novaStop.current = null;
+              if (phaseRef.current === "off") return;
+              setError("Nova Sonic dropped — switched to Gemini voice.");
+              setEngine("gemini");
+              listen();
+            },
+          });
+          return;
+        } catch {
+          setError("Nova Sonic isn't reachable — using Gemini voice.");
+          setEngine("gemini");
+        }
+      }
       set("greeting");
       phaseRef.current = "speaking";
       await speak(GREETING);
@@ -171,10 +206,11 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
       setError("Microphone access is needed to talk.");
       set("off");
     }
-  }, [speak]);
+  }, [speak, engine, listen, setEngine]);
 
   const end = useCallback(() => {
     set("off");
+    novaStop.current?.(); novaStop.current = null;
     cancelAnimationFrame(rafRef.current);
     stopSpeaking();
     const rec = recRef.current;
@@ -187,5 +223,5 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
 
   useEffect(() => end, [end]);
 
-  return { phase, error, start, end, speak, listen, level, mouth, active: phase !== "off" };
+  return { engine, setEngine, phase, error, start, end, speak, listen, level, mouth, active: phase !== "off" };
 }

@@ -36,3 +36,4 @@ use the editor.
 - Keep the owner's structured recovery corpus source-controlled in `src/data/living-clean.json`; why: external hosting and repository sync need the original passages without PDF extraction.
 - Keep server code free of Node-only APIs; why: planned Vercel deploy (switch nitro preset to vercel then).
 - Voice is a hands-free session (src/hooks/use-voice-session.ts): silence detection auto-sends to src/routes/api/transcribe.ts (Gemini), replies are spoken via src/routes/api/tts.ts (Gemini TTS, WAV-wrapped PCM; no browser voice) with audio-driven lip sync; why: owner wants a natural counselor feel, single Google key for STT.
+- Voice engines: gemini pipeline or nova WebSocket (src/lib/voice/nova-stream.ts, binary PCM16 16k in/24k out + JSON control); /api/voice-stream is a 501 placeholder, VITE_NOVA_WS_URL points to an external relay; why: Nova Sonic needs AWS bidirectional streaming not hosted here.
