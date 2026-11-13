@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { startNova } from "@/lib/voice/nova-stream";
+import type { SpeechLike } from "@/components/trudge/CompanionStage";
 
 export type VoiceEngine = "gemini" | "nova";
 const ENGINE_KEY = "trudge_voice_engine";
@@ -30,7 +31,7 @@ function rms(an: AnalyserNode, buf: Float32Array<ArrayBuffer>) {
  * Hands-free counselor loop: greet → listen → auto-send on pause → speak reply → listen again.
  * Speech out comes from /api/tts (Gemini TTS); audio drives the avatar mouth.
  */
-export function useVoiceSession({ onUserText }: { onUserText: (text: string) => void }) {
+export function useVoiceSession({ onUserText, speechRef }: { onUserText: (text: string) => void; speechRef?: { current: SpeechLike | null } }) {
   const [phase, setPhase] = useState<VoicePhase>("off");
   const [error, setError] = useState<string | null>(null);
   const phaseRef = useRef<VoicePhase>("off");
@@ -52,11 +53,16 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
 
   const set = (p: VoicePhase) => { phaseRef.current = p; setPhase(p); };
 
+  const speakResolve = useRef<(() => void) | null>(null);
+
   const stopSpeaking = useCallback(() => {
+    speechRef?.current?.stop();
+    speakResolve.current?.();
+    speakResolve.current = null;
     audioRef.current?.pause();
     audioRef.current = null;
     mouth.current = 0;
-  }, []);
+  }, [speechRef]);
 
   const startRecording = useCallback(() => {
     const stream = streamRef.current;
@@ -139,22 +145,24 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
   const speakServer = async (text: string) => {
     const res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
     if (!res.ok) { setError("Trudge's voice is busy right now — replies still show in the chat."); return false; }
-    const url = URL.createObjectURL(await res.blob());
+    const blob = await res.blob();
+    const speech = speechRef?.current;
+    if (speech) {
+      // Official livliv voice driver: plays the clip and lip-syncs mouth + vowels + head motion.
+      await new Promise<void>((r) => {
+        speakResolve.current = r;
+        speech.onIdle = () => { speakResolve.current = null; r(); };
+        speech.say(blob);
+      });
+      speech.onIdle = undefined;
+      return true;
+    }
+    // Fallback while the model is still loading: plain playback, no lip sync.
+    const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     audioRef.current = audio;
-    const ctx = ctxRef.current!;
-    const src = ctx.createMediaElementSource(audio);
-    const an = ctx.createAnalyser();
-    an.fftSize = 512;
-    src.connect(an); an.connect(ctx.destination);
-    const buf = new Float32Array(new ArrayBuffer(an.fftSize * 4));
-    let raf = 0;
-    const tick = () => { mouth.current = Math.min(1, rms(an, buf) * 6); raf = requestAnimationFrame(tick); };
     await audio.play();
-    tick();
     await new Promise<void>((r) => { audio.onended = audio.onpause = () => r(); });
-    cancelAnimationFrame(raf);
-    mouth.current = 0;
     URL.revokeObjectURL(url);
     return true;
   };
@@ -171,6 +179,7 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
 
   const start = useCallback(async () => {
     setError(null);
+    speechRef?.current?.unlock(); // inside the tap gesture, or browsers block the sound
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
       const ctx = new AudioContext();
@@ -206,7 +215,7 @@ export function useVoiceSession({ onUserText }: { onUserText: (text: string) => 
       setError("Microphone access is needed to talk.");
       set("off");
     }
-  }, [speak, engine, listen, setEngine]);
+  }, [speak, engine, listen, setEngine, speechRef]);
 
   const end = useCallback(() => {
     set("off");

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ArrowUp, RotateCcw, Square, Phone, Mic, PhoneOff } from "lucide-react";
 import { useVoiceSession, GREETING, type VoicePhase } from "@/hooks/use-voice-session";
-import { CompanionStage } from "@/components/trudge/CompanionStage";
+import { CompanionStage, type SpeechLike } from "@/components/trudge/CompanionStage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,7 +33,8 @@ function Index() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const busy = status === "submitted" || status === "streaming";
-  const voice = useVoiceSession({ onUserText: (t) => sendMessage({ text: t }, { body: { voice: true } }) });
+  const speechRef = useRef<SpeechLike | null>(null);
+  const voice = useVoiceSession({ onUserText: (t) => sendMessage({ text: t }, { body: { voice: true } }), speechRef });
   const prevStatus = useRef(status);
 
   // In a voice session, speak each finished reply aloud, then listen again.
@@ -112,7 +113,7 @@ function Index() {
         <div className="mx-auto w-full max-w-2xl px-5 pb-6">
           {empty ? (
             <div className="flex flex-col items-center pt-0 text-center sm:pt-4">
-              <CompanionStage thinking={false} />
+              <CompanionStage thinking={false} speechRef={speechRef} hearing={voice.phase === "hearing"} />
               <button onClick={startVoice} className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm text-primary-foreground shadow-[var(--shadow-soft)] transition hover:opacity-90">
                 <Mic className="h-4 w-4" /> Talk with Trudge
               </button>
@@ -133,8 +134,10 @@ function Index() {
                   compact={!voice.active}
                   thinking={status === "submitted" || voice.phase === "transcribing" || voice.phase === "thinking"}
                   talking={voice.active ? voice.phase === "speaking" : status === "streaming"}
-                  mouth={voice.active ? voice.mouth : undefined}
+                  hearing={voice.phase === "hearing"}
+                  mouth={voice.active && voice.engine === "nova" ? voice.mouth : undefined}
                   listenLevel={voice.active ? voice.level : undefined}
+                  speechRef={speechRef}
                 />
               </div>
               <div className="space-y-6">
