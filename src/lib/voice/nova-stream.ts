@@ -11,7 +11,7 @@ export type NovaHandlers = {
 const BARGE_RMS = 0.08;
 
 export function novaUrl() {
-  const env = (import.meta.env.VITE_NOVA_WS_URL as string | undefined)?.trim();
+  const env = (import.meta.env["VITE_NOVA_WS_URL"] as string | undefined)?.trim();
   if (env) return env;
   const p = location.protocol === "https:" ? "wss:" : "ws:";
   return `${p}//${location.host}/api/voice-stream`;
